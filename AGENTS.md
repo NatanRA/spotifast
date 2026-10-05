@@ -18,7 +18,7 @@ Free account. The browser keeps its own Spotify sign-in. Pair only the same
 account verified by the native Web API sign-in, and never relay cookies,
 passwords, Spotify tokens or license responses through the companion.
 
-Fork companion checks are `python3 -m unittest discover -s browser-companion
+Fork companion checks are `python3 -B -m unittest discover -s browser-companion
 -p 'test_*.py'` and `node --test browser-companion/test-content.mjs`, in
 addition to the applicable Rust checks below. Do not run upstream publishing
 or package-manager distribution workflows for this experimental fork.

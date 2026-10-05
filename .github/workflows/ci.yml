@@ -48,7 +48,7 @@ jobs:
           node-version: '24'
       - name: Browser companion contracts
         run: |
-          python3 browser-companion/test_native_host.py
+          python3 -B browser-companion/test_native_host.py
           node --test browser-companion/test-content.mjs browser-companion/test-background.mjs
           node --check browser-companion/background.js
       - name: Flatpak release metadata regression tests

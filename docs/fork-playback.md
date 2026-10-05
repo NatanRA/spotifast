@@ -28,6 +28,12 @@ Free-account test. A Premium trial cannot validate either claim.
    shows `ON` after pairing or `!` with an actionable error. Keep that tab
    open, optionally in the background. Use the native app to choose tracks.
 
+Brave rejects an unpacked extension containing names beginning with `_`,
+including Python's `__pycache__` directory. Run companion Python checks with
+`python3 -B -m unittest discover -s browser-companion -p 'test_*.py'` so they
+do not write bytecode into the extension. If an older check created a cache,
+move that generated directory outside `browser-companion/`, then retry loading.
+
 Chromium and Chrome have installer options. Linux native host registration
 is implemented but unverified. Windows Rust code remains portable; a Windows
 native host registration installer has not been supplied. No extension is
