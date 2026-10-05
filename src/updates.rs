@@ -14,7 +14,7 @@ use fastframe_update::{MacConfig, ReqwestTransport, UpdateConfig};
 
 pub const CONFIG: UpdateConfig = UpdateConfig {
     macos: MacConfig {
-        bundle_ids: &["rocks.spotifast.Spotifast"],
+        bundle_ids: &["io.github.natanra.SpotifastLab"],
         executable_names: &["Spotifast"],
         legacy_bundle_names: &[],
     },
@@ -23,7 +23,7 @@ pub const CONFIG: UpdateConfig = UpdateConfig {
     // carry the key: from then on an unsigned release is refused.
     publisher_key: None,
     ..UpdateConfig::new(
-        "crmne/spotifast",
+        "NatanRA/spotifast",
         "Spotifast",
         "spotifast",
         env!("CARGO_PKG_VERSION"),

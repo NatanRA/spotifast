@@ -1,5 +1,10 @@
 # Contributing to Spotifast
 
+This is NatanRA's experimental fork. See the fork-specific scope at the top
+of `AGENTS.md` and `docs/fork-playback.md`. The remaining text describes the
+upstream contribution policy. Browser-backed playback and experimental ad
+filtering are deliberate local departures, not proposed upstream features.
+
 Spotifast is a native Spotify client. Changes should improve the
 desktop app without adding a browser, fallback services, or another backend.
 

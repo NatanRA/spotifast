@@ -295,6 +295,9 @@ pub struct Settings {
     /// Local playback has been authorized at least once on this machine, so
     /// the app can resume it silently instead of prompting.
     pub playback_authorized: bool,
+    /// Experimental transport using the paired Spotify web-player companion.
+    #[serde(default)]
+    pub browser_playback: bool,
     /// Closing the window hides to the tray and keeps the music playing.
     pub keep_playing_in_background: bool,
     /// Show the interactive Now Playing widget when hovering over the MacBook notch.
@@ -448,6 +451,7 @@ impl Default for Settings {
             personal_app_nudge_at: None,
             personal_app_intro_seen: false,
             playback_authorized: false,
+            browser_playback: false,
             keep_playing_in_background: true,
             mac_notch_widget: false,
             check_for_updates: true,

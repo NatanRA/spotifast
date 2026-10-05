@@ -1,5 +1,28 @@
 # Spotifast agent guide
 
+## NatanRA fork scope
+
+This fork is being developed for the owner's own Spotify account, targeting
+on-demand playback after its Premium trial expires. The owner explicitly
+authorizes a replacement playback backend and experimental ad filtering.
+These instructions supersede the upstream product restrictions below where
+they conflict with that scope. Keep the existing native interface and favour
+the least additional memory use. Reuse an installed browser through the
+limited companion instead of bundling Chromium. Spotify audio still comes
+from Spotify; do not substitute another catalogue or extract audio files.
+
+Keep profiles, the credential namespace, the instance slot, updates, and app
+packaging separate from the installed upstream application. Do not claim
+Free playback or uninterrupted ad-free listening until tested with a real
+Free account. The browser keeps its own Spotify sign-in. Pair only the same
+account verified by the native Web API sign-in, and never relay cookies,
+passwords, Spotify tokens or license responses through the companion.
+
+Fork companion checks are `python3 -m unittest discover -s browser-companion
+-p 'test_*.py'` and `node --test browser-companion/test-content.mjs`, in
+addition to the applicable Rust checks below. Do not run upstream publishing
+or package-manager distribution workflows for this experimental fork.
+
 Follow `CONTRIBUTING.md`; it is the canonical product and contribution policy.
 These instructions add implementation constraints for coding agents.
 

@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "Spotifast Lab Companion",
+  "version": "0.1.0",
+  "description": "Pair a Spotify web-player tab with the native Spotifast Lab interface. Experimental ad filtering.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuAIp+r0K/9esW8Y5sSlPt5L5mZPjojE1tosTLnlxIwZ8Y+NcKNs3ygI2lmTwT6tZpwm23+w8LmHZjH7Lybg+fDP5rzVABLH0EPxO2gj6kyVJBhGF15ZXxGtyiR5lJ5Hy8Sfpa/77wx99LyOHD2cTkSZfCvh56/2M1lg0nR5xVQ7gk1C8KjI8ih7wkR+EvJ/6K3UluWaE3ey5cI1+hetacUKveI7YgNCZZ2Z8PPQfJQvcYAllNuV5FlhGL8uW+A/DNiOJQhWYHTjMi/WVCDqj9N7l/ZHcJHDyZlcgo91zm/TBTukBXDMg/hMIOYuNRBYi0VWqo5kHOpj9mmlvOgb8xwIDAQAB",
+  "permissions": [
+    "nativeMessaging",
+    "declarativeNetRequest",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://open.spotify.com/*",
+    "https://spclient.wg.spotify.com/*",
+    "https://ads.spotify.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Connect this Spotify tab to Spotifast Lab"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://open.spotify.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "spotify_ads",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  }
+}

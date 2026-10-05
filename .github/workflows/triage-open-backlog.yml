@@ -23,6 +23,7 @@ concurrency:
 
 jobs:
   discover:
+    if: github.repository == 'crmne/spotifast'
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.reports.outputs.matrix }}

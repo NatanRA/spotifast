@@ -16,6 +16,10 @@ struct Cli {
     #[arg(value_name = "LINK")]
     link: Option<String>,
 
+    /// Use the experimental paired browser player instead of librespot.
+    #[arg(long)]
+    browser_playback: bool,
+
     /// Spotify Connect device name for this session.
     #[arg(long)]
     device_name: Option<String>,
@@ -445,6 +449,9 @@ pub(crate) fn run() -> eframe::Result<()> {
         log::warn!("unable to create the application directories: {error}");
     }
     let mut settings = settings::Settings::load(&dirs.settings_file());
+    if cli.browser_playback {
+        settings.browser_playback = true;
+    }
     if let Some(name) = cli.device_name {
         settings.device_name = name;
     }

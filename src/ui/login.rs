@@ -131,7 +131,11 @@ pub fn show(app: &mut App, ui: &mut egui::Ui, connecting: bool) {
                             ui.add_space(10.0);
                             ui.add(
                                 egui::Label::new(
-                                    egui::RichText::new(gettext(locale, "Sign in through your browser. Spotifast never sees your password. Local playback needs Spotify Premium."))
+                                    egui::RichText::new(if app.settings.browser_playback {
+                                        std::borrow::Cow::Borrowed("Sign in through Spotify in your browser, then connect the Spotifast Lab companion. Experimental browser playback keeps audio in the browser.")
+                                    } else {
+                                        gettext(locale, "Sign in through your browser. Spotifast never sees your password. Local playback needs Spotify Premium.")
+                                    })
                                         .font(theme::regular(12.5))
                                         .color(palette.secondary),
                                 )

@@ -44,6 +44,7 @@ use crate::vis::{AudioTap, Tapped};
 
 #[derive(Clone, Debug)]
 pub struct EngineConfig {
+    pub browser_playback: bool,
     pub device_name: String,
     pub bitrate_kbps: u16,
     pub normalisation: bool,
@@ -1525,6 +1526,7 @@ mod tests {
     #[test]
     fn device_id_is_stable_hex() {
         let config = EngineConfig {
+            browser_playback: false,
             buffer_ms: crate::sink::DEFAULT_BUFFER_MS,
             tap: AudioTap::new(),
             eq: crate::eq::shared(),

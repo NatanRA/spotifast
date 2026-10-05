@@ -20,6 +20,8 @@ concurrency:
 
 jobs:
   build:
+    # The fork's code pushes must not publish the upstream documentation site.
+    if: github.repository == 'crmne/spotifast'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

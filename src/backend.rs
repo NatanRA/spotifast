@@ -602,6 +602,15 @@ pub enum Command {
         config: ProxyConfig,
     },
     Player(PlayerCommand),
+    BrowserConnected {
+        generation: u64,
+        player: Option<crate::browser_player::BrowserPlayer>,
+        error: Option<String>,
+    },
+    BrowserState {
+        generation: u64,
+        state: Box<LocalState>,
+    },
     Api(ApiRequest),
     ApiFinished {
         generation: u64,
@@ -1335,6 +1344,7 @@ struct Worker {
     commands: mpsc::UnboundedSender<Command>,
     waker: Waker,
     engine: Option<Arc<Engine>>,
+    browser_player: Option<crate::browser_player::BrowserPlayer>,
     /// What the engine is heard at, so the engine that replaces it starts
     /// there. `engine_config` alone knows only the level the app launched
     /// with.
@@ -1408,6 +1418,7 @@ impl Worker {
             commands,
             waker,
             engine: None,
+            browser_player: None,
             heard: None,
             rootlist_pending: false,
             album_type_lookup: AlbumTypeLookup::default(),
@@ -1694,6 +1705,42 @@ impl Worker {
                 }
                 Command::ApplyProxy { request, config } => {
                     self.change_proxy(request, config, false)
+                }
+                Command::BrowserConnected {
+                    generation,
+                    player,
+                    error,
+                } => {
+                    if generation == *self.session.borrow() && self.signed_in {
+                        self.engine_busy = false;
+                        self.browser_player = player;
+                        if let Some(error) = error {
+                            self.emit(Event::Playback(LocalPlayback::Failed(error)));
+                        }
+                    }
+                }
+                Command::BrowserState { generation, state } => {
+                    if generation == *self.session.borrow() && self.signed_in {
+                        let connected = state.connected;
+                        self.emit(Event::Local(state));
+                        self.emit(Event::Playback(if connected {
+                            LocalPlayback::Ready {
+                                device_id: "spotifast-browser".into(),
+                            }
+                        } else {
+                            LocalPlayback::Unavailable
+                        }));
+                    }
+                }
+                Command::Player(command) if self.engine_config.browser_playback => {
+                    let result = self
+                        .browser_player
+                        .as_ref()
+                        .ok_or_else(|| anyhow::anyhow!("Connect the browser companion first"))
+                        .and_then(|player| player.command(command));
+                    if let Err(error) = result {
+                        self.emit(Event::Error(format!("Browser playback: {error}")));
+                    }
                 }
                 Command::Player(command) => match &self.engine {
                     Some(engine) => {
@@ -2022,6 +2069,7 @@ impl Worker {
                 }
             }
         }
+        self.browser_player = None;
         if let Some(engine) = self.engine.take() {
             engine.shutdown();
         }
@@ -2457,6 +2505,7 @@ impl Worker {
 
     fn sign_out(&mut self) {
         self.spotify_restore_started = true;
+        self.browser_player = None;
         self.cancel_search();
         self.signed_in = false;
         self.rootlist_pending = false;
@@ -2529,6 +2578,10 @@ impl Worker {
     /// Bring the engine up from a credential stored by a previous playback
     /// authorization, if there is one. Silent when there is nothing to resume.
     fn resume_engine(&mut self) {
+        if self.engine_config.browser_playback {
+            self.start_browser_player();
+            return;
+        }
         if !self.signed_in
             || self.engine.is_some()
             || self.engine_busy
@@ -2620,6 +2673,10 @@ impl Worker {
     /// a distinct grant from the Web API sign-in: it uses Spotify's streaming
     /// client identity, the one librespot can play with.
     fn authorize_playback(&mut self) {
+        if self.engine_config.browser_playback {
+            self.start_browser_player();
+            return;
+        }
         let http = match self.http.client() {
             Ok(http) => http,
             Err(error) => {
@@ -2693,6 +2750,10 @@ impl Worker {
     /// on "Connecting to Spotify"). Reusable credentials stay in memory until
     /// this worker receives the connected engine and persists them securely.
     fn connect_engine(&mut self, credentials: Credentials) {
+        if self.engine_config.browser_playback {
+            self.start_browser_player();
+            return;
+        }
         if let Err(error) = self.http.client() {
             self.emit(Event::Playback(LocalPlayback::Failed(error)));
             return;
@@ -2834,11 +2895,57 @@ impl Worker {
         }
     }
 
-    /// Starts the engine only for Premium accounts. librespot 0.8 calls
-    /// `exit(1)` for Free accounts, which cannot be caught. If the plan is
-    /// unknown, preserve the previous behavior and start the engine.
+    /// Pair the browser without creating a librespot session or audio device.
+    fn start_browser_player(&mut self) {
+        if !self.signed_in || self.browser_player.is_some() || self.engine_busy {
+            return;
+        }
+        let Some(account) = self.api.account() else {
+            return;
+        };
+        self.engine_busy = true;
+        self.emit(Event::Playback(LocalPlayback::Connecting));
+        let state_dir = self.dirs.state.clone();
+        let generation = *self.session.borrow();
+        let commands = self.commands.clone();
+        let waker = self.waker.clone();
+        tokio::spawn(async move {
+            let events = commands.clone();
+            let notify_waker = waker.clone();
+            let notify = Arc::new(move |state| {
+                let _ = events.send(Command::BrowserState {
+                    generation,
+                    state: Box::new(state),
+                });
+                notify_waker.wake();
+            });
+            let result = crate::browser_player::BrowserPlayer::start(
+                &state_dir,
+                account.as_str().to_string(),
+                notify,
+            )
+            .await;
+            let (player, error) = match result {
+                Ok(player) => (Some(player), None),
+                Err(error) => (None, Some(error.to_string())),
+            };
+            let _ = commands.send(Command::BrowserConnected {
+                generation,
+                player,
+                error,
+            });
+            waker.wake();
+        });
+    }
+
+    /// Starts librespot only for Premium or unknown plans; browser playback
+    /// uses the independently authenticated web-player tab for either plan.
     fn on_account_checked(&mut self, premium: Option<bool>) {
         self.premium = premium;
+        if self.engine_config.browser_playback {
+            self.start_browser_player();
+            return;
+        }
         if premium == Some(false) {
             self.album_type_lookup.clear_engine_work();
             self.carry_volume();
@@ -5478,6 +5585,33 @@ mod authorization_tests {
             Waker::default(),
         );
         (runtime, worker, events)
+    }
+
+    #[test]
+    fn signed_out_browser_state_cannot_restore_ready_playback() {
+        let (runtime, mut worker, events) = worker("browser-signout-generation");
+        let _entered = runtime.enter();
+        worker.engine_config.browser_playback = true;
+        worker.signed_in = true;
+        let generation = *worker.session.borrow();
+        worker.sign_out();
+        // Discard the sign-out events themselves, then deliver an old callback.
+        events.try_iter().for_each(drop);
+        let (commands, receiver) = mpsc::unbounded_channel();
+        commands
+            .send(Command::BrowserState {
+                generation,
+                state: Box::new(LocalState {
+                    connected: true,
+                    ..LocalState::default()
+                }),
+            })
+            .unwrap();
+        commands.send(Command::Shutdown).unwrap();
+        runtime.block_on(worker.run(receiver));
+        assert!(!worker.signed_in);
+        assert!(worker.browser_player.is_none());
+        assert!(events.try_iter().next().is_none());
     }
 
     #[test]

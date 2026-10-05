@@ -17,7 +17,7 @@ pub struct AppDirs {
 
 impl AppDirs {
     pub fn discover() -> Self {
-        Self::for_name("spotifast")
+        Self::for_name("spotifast-lab")
     }
 
     fn for_name(name: &str) -> Self {

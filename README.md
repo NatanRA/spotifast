@@ -1,5 +1,19 @@
 # Spotifast
 
+## Spotifast Lab (NatanRA fork)
+
+Experimental native controls for Spotify's web player, aimed at keeping the
+same account usable after a Premium trial. The Rust interface stays native;
+a limited browser companion reuses an installed browser for the audio. No
+Chromium distribution or hosted service is added. This is a development
+prototype, not a verified Premium replacement.
+
+Start with `cargo run --locked --no-default-features -- --browser-playback`.
+The profile and credential namespace are isolated from upstream Spotifast.
+See [setup, capabilities and verification limits](docs/fork-playback.md).
+
+The documentation below describes upstream Spotifast's librespot mode.
+
 **Spotify, native and fast.** Spotifast is a Spotify client written in
 Rust with [egui](https://github.com/emilk/egui). It plays music through
 [librespot](https://github.com/librespot-org/librespot), typically uses

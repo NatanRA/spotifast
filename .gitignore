@@ -13,3 +13,6 @@ docs/.bundle/
 /.cache/
 
 /dist/
+
+browser-companion/host-launcher.sh
+browser-companion/__pycache__/

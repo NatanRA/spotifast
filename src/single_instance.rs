@@ -26,7 +26,7 @@
 
 /// The name every request and reply starts with, so a copy of another app
 /// never obeys Spotifast's requests.
-const NAME: &str = "spotifast";
+const NAME: &str = "spotifast-lab";
 
 /// The reply to an accepted command.
 const OK_REPLY: &str = "ok";

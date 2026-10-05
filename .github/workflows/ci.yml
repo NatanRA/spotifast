@@ -43,6 +43,14 @@ jobs:
           cache-generation: quality-v1
       - name: Formatting
         run: cargo fmt --all --check
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Browser companion contracts
+        run: |
+          python3 browser-companion/test_native_host.py
+          node --test browser-companion/test-content.mjs browser-companion/test-background.mjs
+          node --check browser-companion/background.js
       - name: Flatpak release metadata regression tests
         run: python3 packaging/flatpak/test-metainfo.py
       - name: Linux launcher packaging regressions

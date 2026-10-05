@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {"type": "block"},
+    "condition": {
+      "urlFilter": "||spclient.wg.spotify.com/ads/",
+      "initiatorDomains": ["open.spotify.com"],
+      "resourceTypes": ["xmlhttprequest"]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": {"type": "block"},
+    "condition": {
+      "urlFilter": "||ads.spotify.com^",
+      "initiatorDomains": ["open.spotify.com"],
+      "resourceTypes": ["xmlhttprequest", "media", "script", "image"]
+    }
+  }
+]

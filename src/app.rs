@@ -1198,6 +1198,9 @@ impl App {
 
     /// Where playback commands go: this computer's player or a remote device.
     pub fn target(&self) -> Target {
+        if self.settings.browser_playback {
+            return Target::Local;
+        }
         if self.local_ready && self.local.is_active() {
             return Target::Local;
         }
@@ -4182,6 +4185,9 @@ impl App {
     }
 
     fn poll_remote(&mut self, _immediate: bool) {
+        if self.settings.browser_playback {
+            return;
+        }
         if !self.is_connected() {
             return;
         }
@@ -4194,6 +4200,9 @@ impl App {
     }
 
     fn refresh_devices(&mut self) {
+        if self.settings.browser_playback {
+            return;
+        }
         if !self.is_connected() || self.devices_loading {
             return;
         }
@@ -4202,6 +4211,12 @@ impl App {
     }
 
     fn refresh_queue(&mut self, force: bool) {
+        if self.settings.browser_playback {
+            self.queue = Loadable::Failed(
+                "The paired web-player queue is not available in the native interface yet".into(),
+            );
+            return;
+        }
         if !self.is_connected() {
             return;
         }
@@ -4821,7 +4836,7 @@ impl App {
                         .product
                         .as_deref()
                         .is_some_and(|product| product != "premium");
-                    if free && !self.premium_notice_shown {
+                    if free && !self.settings.browser_playback && !self.premium_notice_shown {
                         self.premium_notice_shown = true;
                         self.dialog = Some(Dialog::PremiumNeeded);
                     }
@@ -6724,6 +6739,10 @@ impl App {
     /// in one ordered exchange: two independent requests race, and shuffle
     /// sometimes lost.
     fn play_request(&mut self, request: PlayRequest, shuffle_first: bool) {
+        if self.settings.browser_playback && (!self.local_ready || !self.local.connected) {
+            self.toast_error("Connect the companion on your Spotify web-player tab first");
+            return;
+        }
         // Shuffle applies across contexts until disabled. A selected row still
         // starts first; otherwise choose a random starting track.
         let mut request = request;
@@ -9149,6 +9168,10 @@ impl App {
                 }
             }
             Action::EnablePlayback => {
+                if self.settings.browser_playback {
+                    self.backend.send(Command::AuthorizePlayback);
+                    return;
+                }
                 let free = self
                     .user
                     .as_ref()
@@ -10173,6 +10196,7 @@ pub fn engine_config(
     eq: crate::eq::SharedEq,
 ) -> EngineConfig {
     EngineConfig {
+        browser_playback: settings.browser_playback,
         tap,
         eq,
         device_name: settings.device_name.trim().to_string(),
@@ -21906,6 +21930,21 @@ mod tests {
         let mut app = headless_app();
         app.handle_api(me("premium"));
         assert!(app.dialog.is_none());
+    }
+
+    #[test]
+    fn browser_playback_does_not_send_a_free_account_to_the_premium_dialog() {
+        let mut app = headless_app();
+        app.settings.browser_playback = true;
+        app.handle_api(ApiResponse::Me(Ok(crate::api::models::User {
+            id: "own-free-account".into(),
+            product: Some("free".into()),
+            ..Default::default()
+        })));
+        assert!(!matches!(app.dialog, Some(Dialog::PremiumNeeded)));
+        assert!(app.settings.browser_playback);
+        app.selected_device = Some("previous-remote-device".into());
+        assert!(matches!(app.target(), Target::Local));
     }
 
     /// Only the personal playlists themselves belong on the shelf, not

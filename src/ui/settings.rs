@@ -408,6 +408,22 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     }
 
     let (status, detail, action) = match &app.local_playback {
+        crate::backend::LocalPlayback::Ready { .. } if app.settings.browser_playback => (
+            "Ready".into(),
+            "Playback runs in your paired Spotify browser tab.".into(),
+            None,
+        ),
+        crate::backend::LocalPlayback::Connecting if app.settings.browser_playback => (
+            "Waiting for browser".into(),
+            "Open Spotify in your browser and click the Spotifast Lab companion button.".into(),
+            None,
+        ),
+        crate::backend::LocalPlayback::Unavailable if app.settings.browser_playback => (
+            "Browser disconnected".into(),
+            "Sign in to the same Spotify account in the browser, then click the companion button."
+                .into(),
+            Some("Connect browser playback".into()),
+        ),
         crate::backend::LocalPlayback::Ready { .. } => (
             pgettext(locale, "playback status", "Ready"),
             gettext(locale, "This computer is a Spotify Connect device."),
