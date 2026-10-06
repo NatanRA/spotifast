@@ -56,6 +56,9 @@ A failed command reports an error and can be retried by the user. Closing
 the tab disconnects playback; signing out closes the native bridge. Closing
 the native app does not close or sign out the browser tab.
 
+Repeated playback errors refresh one visible notice rather than stacking
+copies. Bursts of different errors keep at most the four latest notices.
+
 Spotify context loads use its own web-player queue. Selecting a track within
 a native playlist currently opens that track directly, so retaining the
 original playlist context is not yet implemented. Selecting a new item while

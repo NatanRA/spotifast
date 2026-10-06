@@ -9501,11 +9501,22 @@ impl App {
     pub fn toast_error(&mut self, message: impl Into<String>) {
         let message = message.into();
         log::warn!("{message}");
+        if let Some(toast) = self
+            .toasts
+            .iter_mut()
+            .find(|toast| toast.kind == ToastKind::Error && toast.message == message)
+        {
+            toast.created = Instant::now();
+            return;
+        }
         self.toasts.push(Toast {
             message,
             kind: ToastKind::Error,
             created: Instant::now(),
         });
+        if self.toasts.len() > 4 {
+            self.toasts.drain(..self.toasts.len() - 4);
+        }
     }
 
     pub fn report_update_failure(&mut self, error: String) {
@@ -18137,6 +18148,44 @@ mod tests {
             app.apply(Action::ShowUpdate, &ctx);
             assert!(app.show_update);
         }
+    }
+
+    #[test]
+    fn repeated_browser_errors_refresh_one_notice() {
+        let mut app = headless_app();
+        let message = "Browser playback: Connect the browser companion first";
+        app.handle_backend_events(vec![Event::Error(message.into())]);
+        app.toasts[0].created = Instant::now() - Duration::from_secs(2);
+        let previous = app.toasts[0].created;
+        app.handle_backend_events((0..20).map(|_| Event::Error(message.into())).collect());
+        assert_eq!(app.toasts.len(), 1);
+        assert_eq!(app.toasts[0].message, message);
+        assert_eq!(app.toasts[0].kind, ToastKind::Error);
+        assert!(app.toasts[0].created > previous);
+    }
+
+    #[test]
+    fn error_bursts_keep_the_latest_four_notices() {
+        let mut app = headless_app();
+        app.toast("Connection changed");
+        app.toast_error("Connection changed");
+        assert_eq!(
+            app.toasts.len(),
+            2,
+            "an error must not merge with an info notice"
+        );
+        app.handle_backend_events(
+            (0..6)
+                .map(|n| Event::Error(format!("Failure {n}")))
+                .collect(),
+        );
+        assert_eq!(
+            app.toasts
+                .iter()
+                .map(|toast| toast.message.as_str())
+                .collect::<Vec<_>>(),
+            ["Failure 2", "Failure 3", "Failure 4", "Failure 5"]
+        );
     }
 
     #[test]
